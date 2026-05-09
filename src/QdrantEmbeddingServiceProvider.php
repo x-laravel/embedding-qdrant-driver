@@ -4,6 +4,7 @@ namespace XLaravel\Embedding\Driver\Qdrant;
 
 use Illuminate\Support\ServiceProvider;
 use XLaravel\Embedding\Contracts\VectorStore;
+use XLaravel\Embedding\Contracts\VectorStoreMetrics;
 use XLaravel\Embedding\SimilarityManager;
 use XLaravel\Embedding\Storage\JsonVectorStore;
 
@@ -32,5 +33,7 @@ class QdrantEmbeddingServiceProvider extends ServiceProvider
         $this->app->bind(VectorStore::class, function ($app) {
             return new QdrantVectorStore($app->make(JsonVectorStore::class));
         });
+
+        $this->app->bind(VectorStoreMetrics::class, QdrantVectorStoreMetrics::class);
     }
 }

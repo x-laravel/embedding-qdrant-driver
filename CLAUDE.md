@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 Qdrant vector database driver for `x-laravel/embedding`. Handles similarity search via Qdrant's native ANN engine and dual-writes embeddings to both SQL and Qdrant.
 
 - **Package name:** `x-laravel/embedding-qdrant-driver` — **Namespace:** `XLaravel\Embedding\Driver\Qdrant`
-- PHP `^8.3`, Laravel (illuminate) `^12.0|^13.0`, `x-laravel/embedding ^1.0`
+- PHP `^8.3`, Laravel (illuminate) `^12.0|^13.0`, `x-laravel/embedding ^1.2`
 - Qdrant server (self-hosted or Qdrant Cloud)
 - Dev: Orchestra Testbench `^10.0|^11.0`, PHPUnit `^11.0|^12.0`
 
@@ -35,7 +35,8 @@ Tests use SQLite for the SQL side and a local Qdrant container for similarity se
 |------|----------------|
 | `QdrantDriver.php` | Implements `SimilarityDriver`. Calls Qdrant's `/points/search` REST API with payload filters, maps results back to Eloquent models. |
 | `QdrantVectorStore.php` | Implements `VectorStore`. Dual-writes: calls `JsonVectorStore` for SQL, then upserts the point to Qdrant via `/collections/{collection}/points`. Returns the SQL `Embedding` record. |
-| `QdrantEmbeddingServiceProvider.php` | `register()` merges `config/embedding-qdrant-driver.php` and binds `VectorStore` → `QdrantVectorStore`. `boot()` registers `qdrant` similarity driver, loads migration, publishes under `embedding-qdrant` tag. |
+| `QdrantVectorStoreMetrics.php` | Implements `VectorStoreMetrics`. Reports `rows` from Qdrant's `points_count` via `GET /collections/{name}`, falling back to `Embedding::count()` when Qdrant is unreachable. Byte fields stay `null` because Qdrant does not expose a stable per-collection disk-size endpoint. |
+| `QdrantEmbeddingServiceProvider.php` | `register()` merges `config/embedding-qdrant-driver.php`, binds `VectorStore` → `QdrantVectorStore` and `VectorStoreMetrics` → `QdrantVectorStoreMetrics`. `boot()` registers `qdrant` similarity driver, loads migration, publishes under `embedding-qdrant` tag. |
 
 ## Test Structure (`tests/`)
 
@@ -52,7 +53,8 @@ Tests use SQLite for the SQL side and a local Qdrant container for similarity se
 ```
 register()
   ├─► mergeConfigFrom(config/embedding-qdrant-driver.php, 'embedding.qdrant')
-  └─► app->bind(VectorStore::class, QdrantVectorStore::class)
+  ├─► app->bind(VectorStore::class, QdrantVectorStore::class)
+  └─► app->bind(VectorStoreMetrics::class, QdrantVectorStoreMetrics::class)
 
 boot()
   ├─► loadMigrationsFrom(...)
