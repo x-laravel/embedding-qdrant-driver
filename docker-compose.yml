@@ -1,0 +1,64 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/6333' 2>/dev/null && echo ok || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  php83:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "8.3"
+    volumes:
+      - .:/app
+      - vendor83:/app/vendor
+    environment:
+      - EMBEDDING_QDRANT_URL=http://qdrant:6333
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    entrypoint: ["sh", "-c", "composer install --no-interaction && vendor/bin/phpunit"]
+    profiles: ["php83"]
+
+  php84:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "8.4"
+    volumes:
+      - .:/app
+      - vendor84:/app/vendor
+    environment:
+      - EMBEDDING_QDRANT_URL=http://qdrant:6333
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    entrypoint: ["sh", "-c", "composer install --no-interaction && vendor/bin/phpunit"]
+    profiles: ["php84"]
+
+  php85:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "8.5"
+    volumes:
+      - .:/app
+      - vendor85:/app/vendor
+    environment:
+      - EMBEDDING_QDRANT_URL=http://qdrant:6333
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    entrypoint: ["sh", "-c", "composer install --no-interaction && vendor/bin/phpunit"]
+    profiles: ["php85"]
+
+volumes:
+  vendor83:
+  vendor84:
+  vendor85:
